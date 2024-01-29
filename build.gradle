@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.2'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'bot'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+def springBootVersion = '3.2.1',
+    sqliteVersion = '3.44.1.0',
+    hibernateVersion = '6.4.1.Final',
+    telegramBotsVersion = '6.9.0',
+    lombokVersion = '1.18.28'
+
+dependencies {
+    implementation (
+
+            "org.springframework.boot:spring-boot-starter:$springBootVersion",
+            "org.springframework.boot:spring-boot-starter-data-jpa:$springBootVersion",
+            "org.xerial:sqlite-jdbc:$sqliteVersion",
+            "org.hibernate.orm:hibernate-community-dialects:$hibernateVersion",
+            "org.telegram:telegrambots:$telegramBotsVersion",
+            "org.projectlombok:lombok:$lombokVersion",
+            "javax.xml.bind:jaxb-api:2.3.1"
+    )
+    implementation 'org.jetbrains:annotations:24.0.0'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation (
+            "org.springframework.boot:spring-boot-starter-test"
+    )
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
