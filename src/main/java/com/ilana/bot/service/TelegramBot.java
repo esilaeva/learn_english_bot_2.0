@@ -166,72 +166,75 @@ public class TelegramBot extends TelegramLongPollingBot {
         String answer = "";
         if (word == null) {
             answer = WORD_IS_NOT_EXISTS;
-        } else {
-            if (language.equals(RU)) {
-                List<EnWord> text = enWordRepository.findByWordRu(word.toLowerCase());
-                answer = text.isEmpty() ? WORD_IS_NOT_EXISTS : text.stream()
-                        .map(EnWord::getWordEn)
-                        .collect(Collectors.joining(", "));
-            } else if (language.equals(EN)) {
-                List<RuWord> text = ruWordRepository.findByWordEn(word.toLowerCase());
-                answer = text.isEmpty() ? WORD_IS_NOT_EXISTS : text.stream()
-                        .map(RuWord::getWordRu)
-                        .collect(Collectors.joining(", "));
-            }
         }
         executeMessageTextAddKeyboard(answer, chatId, "navShort");
     }
 
     private void findRandomWord(long chatId) {
-        language = userRepository.findUserDataByChatId(chatId).getLanguage();
         String textSend, trans = "";
-
-
+        List<UserProgress> userProgressData = userProgressRepository.findByChatId(chatId);
+        User userData = userRepository.findUserDataByChatId(chatId);
+        language = userData.getLanguage();
+        boolean flag = false;
         if (language.equals(RU)) {
-            wordId = userRepository.findUserDataByChatId(chatId).getLastRuWordId();
-            count = userProgressRepository.findCounterByLanguageAndWordId(language, wordId);
             RussianWord russianWord = russianWordRepository.findRandomWord();
-            if (russianWord == null) {
+            wordId = russianWord.getId();
+            word = russianWord.getWord();
+            if (!userProgressData.isEmpty()) {
+                for (UserProgress u : userProgressData) {
+                    if (u.getWordId().equals(wordId)) {
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+            if (!flag) {
+                count = 0L;
+                addUserProgress(chatId, language, wordId, count);
+            }
+            count = userProgressRepository.findCounterByLanguageAndWordId(language, wordId);
+            if(count == null){
+                count = 0L;
+            }
+            if (count >= 5) {
                 executeMessageTextAddKeyboard(ALL_DONE, chatId, "count");
                 return;
-            } else {
-                wordId = russianWord.getId();
-                word = russianWord.getWord();
-                userRepository.updateLastRussianWordIdByChatId(wordId, chatId);
-                log.info("findRandomWord() --> russian_word_id: " + wordId + "\nrussian_word: " + word);
             }
         } else if (language.equals(EN)) {
             EnglishWord englishWord = englishWordRepository.findRandomWord();
+            wordId = englishWord.getId();
+            word = englishWord.getWord();
+            trans = englishWord.getTranscription().equals("[]") ? "" : " " + englishWord.getTranscription();
+            if (!userProgressData.isEmpty()) {
+                for (UserProgress u : userProgressData) {
+                    if (u.getWordId().equals(wordId)) {
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+            if (!flag) {
+                count = 0L;
+                addUserProgress(chatId, language, wordId, count);
+            }
             count = userProgressRepository.findCounterByLanguageAndWordId(language, wordId);
-            if (englishWord == null) {
+            if (count >= 5) {
                 executeMessageTextAddKeyboard(ALL_DONE, chatId, "count");
                 return;
-            } else {
-                wordId = englishWord.getId();
-                word = englishWord.getWord();
-                trans = englishWord.getTranscription().equals("[]") ? "" : " " + englishWord.getTranscription();
-                userRepository.updateLastEnglishWordIdByChatId(wordId, chatId);
-                log.info("findRandomWord() --> english_word_id: " + wordId + "\nenglish_word: " + word);
             }
         }
-        updateUserProgress(chatId, language, wordId, count);
-
         textSend = String.format("Твой вариант перевода слова <b> %s%s </b>:", word, trans);
         executeMessageText(textSend, chatId);
     }
 
-    private void updateUserProgress(Long chatId, String language, Long wordId, Long count) {
-        if (userProgressRepository.findByChatId(chatId).isEmpty() || userProgressRepository.findByLanguageAndWordId(language, wordId) == null) {
+    private void addUserProgress(Long chatId, String language, Long wordId, Long count) {
             UserProgress userProgress = new UserProgress();
             userProgress.setChatId(chatId);
             userProgress.setLanguage(language);
             userProgress.setWordId(wordId);
-            userProgress.setWordCounter(0L);
+        userProgress.setWordCounter(count);
 
             userProgressRepository.save(userProgress);
-        } else {
-            userProgressRepository.updateCountWordByLanguageAndWordId(count, language, wordId);
-        }
     }
 
     private void findTranslateWord(String message, long chatId) {
@@ -242,7 +245,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         boolean flag = false;
 
         if (language.equals(EN)) {
-            count = userProgressRepository.findCounterByLanguageAndWordId(language, wordId);
+            var userProgress = userProgressRepository.findByChatIdAndWordIdAndLanguage(chatId, wordId, language);
+            if (userProgress == null) {
+                addUserProgress(chatId, language, wordId, count);
+            } else {
+                count = userProgress.getWordCounter();
+            }
             List<EnglishWord> list = wordTranslationRepository.findEnglishTranslationsForRussianWord(message.toLowerCase());
             for (EnglishWord ew : list) {
                 if (ew.getWord().equals(word)) {
@@ -251,23 +259,24 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
             }
             if (flag) {
-                wordId = userData.getLastEnWordId();
-                if (count < 5) {
+                if (count != null && count < 5) {
                     count += 1;
-
+                    userProgressRepository.updateCountWordByLanguageAndWordId(count, language, wordId);
                     textSend = ANSWER_RIGHT;
-
                 } else {
                     textSend = ALL_DONE;
                 }
-
-
             } else {
                 textSend = ANSWER_WRONG;
             }
-
         } else if (language.equals(RU)) {
-            count = userProgressRepository.findCounterByLanguageAndWordId(language, wordId);
+            var userProgress = userProgressRepository.findByChatIdAndWordIdAndLanguage(chatId, wordId, language);
+
+            if (userProgress == null) {
+                addUserProgress(chatId, language, wordId, count);
+            } else {
+                count = userProgress.getWordCounter();
+            }
             List<RussianWord> list = wordTranslationRepository.findRussianTranslationsForEnglishWord(message.toLowerCase());
             for (RussianWord rw : list) {
                 if (rw.getWord().equals(word)) {
@@ -276,10 +285,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
             }
             if (flag) {
-                wordId = userData.getLastRuWordId();
-                if (count < 5) {
+                if (count != null && count < 5) {
                     count += 1;
-
                     userProgressRepository.updateCountWordByLanguageAndWordId(count, language, wordId);
                     textSend = ANSWER_RIGHT;
                 } else {
@@ -289,7 +296,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 textSend = ANSWER_WRONG;
             }
         }
-
         executeMessageTextAddKeyboard(textSend, chatId, "nav");
     }
 
