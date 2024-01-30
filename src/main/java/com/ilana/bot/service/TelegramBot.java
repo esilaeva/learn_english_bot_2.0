@@ -134,10 +134,12 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void resetCounter(long chatId) {
         language = userRepository.findUserDataByChatId(chatId).getLanguage();
         if (language.equals(RU)) {
-            wordsRepository.updateCountWordRuByChatId();
+//            wordsRepository.updateCountWordRuByChatId();
+            userProgressRepository.updateWordCounterRuByLanguageAndChatId(language, chatId);
             back(chatId);
         } else {
-            wordsRepository.updateCountWordEnByChatId();
+            userProgressRepository.updateWordCounterEnByLanguageAndChatId(language, chatId);
+//            wordsRepository.updateCountWordEnByChatId();
             back(chatId);
         }
     }
