@@ -11,9 +11,6 @@ import java.util.List;
 
 public interface UserProgressRepository extends JpaRepository<UserProgress, Long> {
 
-//    @Query("SELECT up.wordCounter FROM UserProgress up WHERE up.language = :language and up.wordId = :wordId")
-//    Long findCounterByLanguageAndWordId(@Param("language") String language, @Param("wordId") Long wordId);
-
     UserProgress findByChatIdAndWordIdAndLanguage(@Param("chatId") Long chatId, @Param("wordId") Long wordId, @Param("language") String language);
 
     @Query(value = "SELECT word_counter FROM user_progress WHERE language = :language and word_id = :wordId", nativeQuery = true)
