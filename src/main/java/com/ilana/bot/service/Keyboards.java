@@ -41,8 +41,8 @@ public class Keyboards {
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
         List<InlineKeyboardButton> rowInline = new ArrayList<>();
         InlineKeyboardButton allWordsButton = new InlineKeyboardButton();
-        allWordsButton.setText(ALL_WORDS);
-        allWordsButton.setCallbackData("all_words");
+        allWordsButton.setText("Все слова из базы");
+        allWordsButton.setCallbackData(ALL_WORDS);
 
         for (int i = 0; i < listTopic.size(); i++) {
             InlineKeyboardButton button = new InlineKeyboardButton();
