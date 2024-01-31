@@ -1,18 +1,23 @@
 package com.ilana.bot.service;
 
+import com.ilana.bot.model.Topic;
+import com.ilana.bot.repository.TopicRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.ilana.bot.service.Constants.*;
 
+@Slf4j
 public class Keyboards {
 
     public void menuKeyboard(SendMessage message) {
-
         InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
         List<InlineKeyboardButton> rowInline = new ArrayList<>();
@@ -33,6 +38,39 @@ public class Keyboards {
         markupInline.setKeyboard(rowsInline);
 
         message.setReplyMarkup(markupInline);
+    }
+
+    public void topicKeyboard(SendMessage message, List<String> listTopic) {
+        InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+        List<InlineKeyboardButton> rowInline = new ArrayList<>();
+
+        for (int i = 0; i < listTopic.size(); i++) {
+            InlineKeyboardButton button = new InlineKeyboardButton();
+            button.setText(listTopic.get(i));
+            button.setCallbackData("Button_" + listTopic.get(i));
+
+            rowInline.add(button);
+
+            if ((i % 2 != 0) || (i == listTopic.size() - 1)) {
+                rowsInline.add(rowInline);
+                rowInline = new ArrayList<>();
+            }
+        }
+
+//
+//        List<InlineKeyboardButton> row = null;
+//        for (int i = 0; i < listTopic.size(); i++) {
+//            if (i % 2 == 0) {
+//                rowsInline.add(rowInline);
+//                rowInline = new ArrayList<>();
+//            }
+//        }
+
+        markupInline.setKeyboard(rowsInline);
+        message.setReplyMarkup(markupInline);
+
+//        return message;
     }
 
     public void languageKeyboard(SendMessage message) {
