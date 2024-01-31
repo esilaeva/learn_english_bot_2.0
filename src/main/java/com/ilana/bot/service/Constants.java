@@ -10,7 +10,8 @@ public class Constants {
     public static final String TRANSLATE = "translate";
     public static final String NEXT = "next";
     public static final String BACK = "back";
-    public static final String TOPIC = "topic";
+    public static final String TOPIC = "all_words";
+    public static final String ALL_WORDS = "topic";
     public static String HELP_TEXT = "Этот бот помогает в изучении английского языка.\n\n" +
             "Вы можете выполнять команды из главного меню слева или набрав команду:\n\n" +
             "Выберите /start чтобы начать тренировку\n\n" +
