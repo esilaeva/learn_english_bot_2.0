@@ -47,6 +47,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Autowired
     private WordTranslationRepository wordTranslationRepository;
 
+
     public TelegramBot(BotConfig config) {
         this.config = config;
         List<BotCommand> listOfCommands = new ArrayList<>();
@@ -105,6 +106,16 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 case RU, EN -> {
                     userRepository.updateLanguageByChatId(callbackData, chatId);
+                    List<String> listTopic = topicRepository.findAllTopic();
+                    if (listTopic != null) {
+                        executeMessageTextAddTopicKeyboard(ALL_TOPIC, chatId, listTopic);
+                        log.info("listTopic: " + listTopic);
+                    } else {
+                        findRandomWord(chatId);
+                    }
+                }
+                case TOPIC -> {
+
                     findRandomWord(chatId);
                 }
                 case NEXT -> {
@@ -124,7 +135,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                             executeMessageTextAddKeyboard("Нет слов для перевода. \nЧто будем делать дальше?", chatId, "menu");
                         } else {
                             word = russianWordRepository.findWordById(wordId);
-//                            word = String.valueOf(userRepository.findUserDataByChatId(chatId).getLastRuWordId());
                             findAllTranslates(word, chatId);
                         }
                     } else if (userRepository.findUserDataByChatId(chatId).getLanguage().equals(EN)) {
@@ -263,13 +273,13 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void addUserProgress(Long chatId, String language, Long wordId, Long count) {
-            UserProgress userProgress = new UserProgress();
-            userProgress.setChatId(chatId);
-            userProgress.setLanguage(language);
-            userProgress.setWordId(wordId);
+        UserProgress userProgress = new UserProgress();
+        userProgress.setChatId(chatId);
+        userProgress.setLanguage(language);
+        userProgress.setWordId(wordId);
         userProgress.setWordCounter(count);
 
-            userProgressRepository.save(userProgress);
+        userProgressRepository.save(userProgress);
     }
 
     private void findTranslateWord(String message, long chatId) {
@@ -425,6 +435,21 @@ public class TelegramBot extends TelegramLongPollingBot {
             case "lang" -> keyboard.languageKeyboard(message);
             case "count" -> keyboard.counterKeyboard(message);
         }
+
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            log.error(ERROR_TEXT + e.getMessage());
+        }
+    }
+
+    private void executeMessageTextAddTopicKeyboard(String text, long chatId, List<String> listTopic) {
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(text);
+        message.setParseMode("HTML");
+
+        keyboard.topicKeyboard(message, listTopic);
 
         try {
             execute(message);

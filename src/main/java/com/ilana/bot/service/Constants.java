@@ -10,6 +10,7 @@ public class Constants {
     public static final String TRANSLATE = "translate";
     public static final String NEXT = "next";
     public static final String BACK = "back";
+    public static final String TOPIC = "topic";
     public static String HELP_TEXT = "Этот бот помогает в изучении английского языка.\n\n" +
             "Вы можете выполнять команды из главного меню слева или набрав команду:\n\n" +
             "Выберите /start чтобы начать тренировку\n\n" +
@@ -25,6 +26,6 @@ public class Constants {
     public static final String WORD_IS_NOT_EXISTS = "Такого слова нет в словаре. Попробуй другое";
     public static final String FIND_WORD = "Напиши какое слово найти?";
     public static final String ALL_DONE = "Все слова выучены";
-
+    public static final String ALL_TOPIC = "Выбери тему:";
 
 }
