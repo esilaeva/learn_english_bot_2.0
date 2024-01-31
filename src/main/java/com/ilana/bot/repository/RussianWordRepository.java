@@ -19,5 +19,7 @@ public interface RussianWordRepository extends JpaRepository<RussianWord, Long> 
     @Query("SELECT rw.id FROM RussianWord rw WHERE rw.word = :russianWord")
     Long findWordIdByWord(@Param("russianWord") String russianWord);
 
+    @Query("SELECT rw.word FROM RussianWord rw WHERE rw.id = :wordId")
+    String findWordById(@Param("wordId") Long wordId);
 
 }

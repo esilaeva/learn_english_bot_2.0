@@ -22,6 +22,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.ilana.bot.service.Constants.*;
 
@@ -118,15 +119,30 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 case TRANSLATE -> {
                     if (userRepository.findUserDataByChatId(chatId).getLanguage().equals(RU)) {
-                        word = String.valueOf(userRepository.findUserDataByChatId(chatId).getLastRuWordId());
-                        findAllTranslates(word, chatId);
+                        wordId = userRepository.findUserDataByChatId(chatId).getLastRuWordId();
+                        if (wordId == null) {
+                            executeMessageTextAddKeyboard("Нет слов для перевода. \nЧто будем делать дальше?", chatId, "menu");
+                        } else {
+                            word = russianWordRepository.findWordById(wordId);
+//                            word = String.valueOf(userRepository.findUserDataByChatId(chatId).getLastRuWordId());
+                            findAllTranslates(word, chatId);
+                        }
                     } else if (userRepository.findUserDataByChatId(chatId).getLanguage().equals(EN)) {
-                        word = String.valueOf(userRepository.findUserDataByChatId(chatId).getLastEnWordId());
-                        findAllTranslates(word, chatId);
+                        wordId = userRepository.findUserDataByChatId(chatId).getLastEnWordId();
+                        if (wordId == null) {
+                            executeMessageTextAddKeyboard("Нет слов для перевода. \nЧто будем делать дальше?", chatId, "menu");
+                        } else {
+
+                            word = englishWordRepository.findWordById(wordId);
+                            findAllTranslates(word, chatId);
+                        }
                     }
                 }
                 case BACK -> back(chatId);
                 case COUNT -> resetCounter(chatId);
+                default -> {
+                    executeMessageText("Это еще не изучено", chatId);
+                }
             }
         }
     }
@@ -134,12 +150,10 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void resetCounter(long chatId) {
         language = userRepository.findUserDataByChatId(chatId).getLanguage();
         if (language.equals(RU)) {
-//            wordsRepository.updateCountWordRuByChatId();
             userProgressRepository.updateWordCounterRuByLanguageAndChatId(language, chatId);
             back(chatId);
         } else {
             userProgressRepository.updateWordCounterEnByLanguageAndChatId(language, chatId);
-//            wordsRepository.updateCountWordEnByChatId();
             back(chatId);
         }
     }
@@ -166,8 +180,25 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void findAllTranslates(String word, long chatId) {
         String answer = "";
+        language = userRepository.findUserDataByChatId(chatId).getLanguage();
         if (word == null) {
             answer = WORD_IS_NOT_EXISTS;
+
+        }else{
+            if(language.equals(RU)){
+
+                List<EnglishWord> listWords = wordTranslationRepository.findEnglishTranslationsForRussianWord(word.toLowerCase());
+
+                answer = listWords.isEmpty() ? WORD_IS_NOT_EXISTS : listWords.stream()
+                        .map(EnglishWord::getWord)
+                        .collect(Collectors.joining(", "));
+            } else if (language.equals(EN)) {
+                List<RussianWord> listWords = wordTranslationRepository.findRussianTranslationsForEnglishWord(word.toLowerCase());
+                answer = listWords.isEmpty() ? WORD_IS_NOT_EXISTS : listWords.stream()
+                        .map(RussianWord::getWord)
+                        .collect(Collectors.joining(", "));
+            }
+
         }
         executeMessageTextAddKeyboard(answer, chatId, "navShort");
     }
@@ -202,6 +233,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 executeMessageTextAddKeyboard(ALL_DONE, chatId, "count");
                 return;
             }
+            userRepository.updateLastRussianWordIdByChatId(wordId, chatId);
         } else if (language.equals(EN)) {
             EnglishWord englishWord = englishWordRepository.findRandomWord();
             wordId = englishWord.getId();
@@ -224,6 +256,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 executeMessageTextAddKeyboard(ALL_DONE, chatId, "count");
                 return;
             }
+            userRepository.updateLastEnglishWordIdByChatId(wordId, chatId);
         }
         textSend = String.format("Твой вариант перевода слова <b> %s%s </b>:", word, trans);
         executeMessageText(textSend, chatId);
